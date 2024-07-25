@@ -63,6 +63,7 @@ class Episode:
         print(id, type(id))
         self.id = id
         self.title = title
+        #creates list of tuples like ("VOE", "serie/Rick-and-Morty/1/2-Der-Rasenmaeher-Hund/de/VOE")
         self.hosts = {host[0]: host[1] for host in hosts}
         self.host_url = None
         self.video_url = None

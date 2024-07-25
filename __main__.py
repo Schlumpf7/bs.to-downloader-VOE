@@ -8,7 +8,7 @@ from objects import Season
 import utils
 
 
-supported_hosts = ["vivo"]
+supported_hosts = ["voe"]
 
 
 # PARSER
@@ -18,7 +18,7 @@ parser = argparse.ArgumentParser(
 
 
 parser.add_argument("url", help="the url of the season")
-parser.add_argument("host", help="the video host (currently only 'vivo')",
+parser.add_argument("host", help="the video host (currently only 'voe')",
                     default="vivo", nargs="?")
 
 parser.add_argument("--start", help="first episode number",
@@ -64,11 +64,13 @@ host_select = supported_hosts[0]  # args.host
 print(f"Currently the only supported host is '{supported_hosts[0]}'")
 print("Selected host:", pformat(host_select))
 
+#creates list of episodes with supported hosts
 episodes_select = [ep for ep in s.episodes if host_select in ep.hosts]
+#thins out the list by start and end episode
 episodes_select = [ep for ep in episodes_select
                    if args.start <= ep.id <= args.end]
 
-if not episodes_select:  # no episodes selected
+if not episodes_select:  # no episodes selected / no episodes with supported host
     print("no episodes selected.")
     quit()
 
@@ -86,9 +88,9 @@ if args.dry:
 print(("Please solve CAPTCHAs if needed and copy-paste the host-url, "
        "then press enter:"))
 for ep in episodes_select:
+    #hosts[host_selected] returns the second value of the host-tuple (see objects.py l.66)
     webbrowser.open(s.base + "/" + ep.hosts[host_select])
     ep.host_url = input(f"  {ep}: ").strip()
-    # ep.host_url = "https://vivo.sx/bfac151056"
 
 
 # CRAWL HOST SITES
