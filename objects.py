@@ -8,7 +8,7 @@ class Season:
         url_parts = url.split("/")
         self.path = url_parts[3:7]
         self.base = "/".join(url_parts[:3])
-
+ 
         html = utils.get(url)
         self.title = bs_to.get_series_title(html)
 
@@ -47,6 +47,7 @@ class Season:
 
     @property
     def id_str(self):
+        #return string of form "The Big Bang Theory | TBBT.S01.Deutsch"
         return f"{self.series_str}.{self.season_str}"
 
     def obj(self):
@@ -65,6 +66,7 @@ class Episode:
         self.title = title
         #creates list of tuples like ("VOE", "serie/Rick-and-Morty/1/2-Der-Rasenmaeher-Hund/de/VOE")
         self.hosts = {host[0]: host[1] for host in hosts}
+        self.filetype=None
         self.host_url = None
         self.video_url = None
 
@@ -80,10 +82,12 @@ class Episode:
 
     @property
     def episode_str(self):
+        #returns String of Form "E02"
         return f"E{str(self.id).zfill(2)}"
 
     @property
     def id_str(self):
+        #returns String of form "E02.Sheldon 2.0"
         return f"{self.episode_str}.{self.title}"
 
 
