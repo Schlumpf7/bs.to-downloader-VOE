@@ -192,7 +192,22 @@ for d in downloads:#downloading temporary files (segments+playlist)
         f=open(local_filename, "wb")
         f.write(requests.get(link).content)
         f.close()
-    subprocess.run(["ffmpeg", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", d[1]])
+
+        #RE-FORMAT M3U8 file to just contain the file names(delete everything after .ts)
+        f=open("./tmp/"+m3u8_filename)
+        f_new=open("./tmp/"+m3u8_filename+"_new", "w")
+        to_replace=""
+        for line in f:
+            if to_replace=="" and line.__contains__("?t"):
+                to_replace="?t"+line.split("?t")[1][:-1]
+            line=line.replace(to_replace, "")
+            f_new.write(line)
+        f.close()
+        f_new.close()
+        os.remove("./tmp/"+m3u8_filename)#remove old file
+        os.rename("./tmp/"+m3u8_filename+"_new","./tmp/"+m3u8_filename)#rename new file
+
+    subprocess.run(["ffmpeg", "-i", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", d[1]])
     shutil.rmtree("./tmp")
             
 print("done.")
