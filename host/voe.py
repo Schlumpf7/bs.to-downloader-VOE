@@ -36,10 +36,7 @@ def resolve(url, *, driver=None):
 
 
 def _extract(html):
-    soup = BeautifulSoup(html, "html.parser")
-
-    script = str(soup.find_all("script")[11])
-    hls=script.split("\'hls\'")[1]
+    hls=html.split("\'hls\'")[1]
     hls=hls.split("\'")[1]
     source=base64.b64decode(hls).decode("UTF-8")
     
@@ -53,7 +50,7 @@ def _extract(html):
     #loop over each segment in Media playlist to generate link
     segments=mediaPL.split("\n")[6:]
     for i in range(len(segments)):
-        if i%2==0: 
+        if i%2==0 or i==len(segments)-1: 
             #skip every second line because it just contains the duration of the snippet
             continue 
         

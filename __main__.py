@@ -1,16 +1,21 @@
 import os
+import shutil
+import subprocess
 import pathlib
 import argparse
+import sys
 import webbrowser
 from pprint import pformat
+
+import requests
 
 from objects import Season
 import utils
 
 
-supported_hosts = ["voe"]
+supported_hosts = ["VOE"]
 
-
+sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--end", "1" ]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
@@ -18,7 +23,7 @@ parser = argparse.ArgumentParser(
 
 
 parser.add_argument("url", help="the url of the season")
-parser.add_argument("host", help="the video host (currently only 'voe')",
+parser.add_argument("host", help="the video host (currently only 'VOE')",
                     default="vivo", nargs="?")
 
 parser.add_argument("--start", help="first episode number",
@@ -94,18 +99,25 @@ for ep in episodes_select:
 
 
 # CRAWL HOST SITES
-if host_select == "vivo":
-    import host.vivo
-    for ep, url in zip(episodes_select, host.vivo.resolve([ep.host_url for ep in episodes_select])):
-        ep.video_url = url[0]
-        ep.filetype = url[1].split("/")[1]
-
-else:
-    print("ERROR")
-    quit()
+match host_select:
+    case "VOE":
+        import host.voe
+        for ep in episodes_select:
+            ep.video_url=host.voe.resolve(ep.host_url)
+            ep.filetype="mp4"
+            
+    case "vivo":
+        import host.vivo
+        for ep, url in zip(episodes_select, host.vivo.resolve([ep.host_url for ep in episodes_select])):
+            ep.video_url = url[0]
+            ep.filetype = url[1].split("/")[1]
+    case _:
+        print("ERROR")
+        quit()
 
 
 # OUTPUT
+#create output directory (output argument + series title)
 outpath = pathlib.Path(args.out).joinpath(utils.safe_filename(s.series_str))
 print(f"Output directory: '{outpath.absolute()}'")
 outpath.mkdir(parents=True, exist_ok=True)
@@ -129,18 +141,20 @@ if args.json:
 
 
 # DOWNLOAD
-# downloadpath = pathlib.Path(args.dir)
-# eppath = outpath  # downloadpath.joinpath(utils.safe_filename(s.series_str))
 eppath = pathlib.Path()
 if not args.flat:  # put into season-directory
     eppath = eppath.joinpath(utils.safe_filename(s.season_str))
-# print(f"Download directory: '{downloadpath.absolute()}'")
 
-downloads = [(ep.video_url, eppath.joinpath(utils.safe_filename(
-    f"{s.id_str}.{ep.id_str}.{ep.filetype}")))
-    for ep in episodes_select]
+#create list of tuples (video_url, epidode_path)
+downloads=[]
+for ep in episodes_select:
+    pathep=eppath.joinpath(utils.safe_filename(f"{s.id_str}.{ep.id_str}.{ep.filetype}"))#path per episode (eppath/Series_string.episode_string.filetype)
+    downloads.append((ep.video_url, pathep))
 
-# SCRIPT
+
+#Download procedure for vivo
+
+""" #SCRIPT
 scriptpath = outpath.joinpath(utils.safe_filename(f"Download {s.id_str}.sh"))
 with scriptpath.open("w") as file:
     if not args.flat:
@@ -149,7 +163,7 @@ with scriptpath.open("w") as file:
         file.write(
             f"wget --no-check-certificate {d[0]} -O \"{d[1]}\"\n")
 scriptpath.chmod(0o775)  # make download script executable
-print(f"Generated download script '{scriptpath.name}'")
+print(f"Generated download script '{scriptpath.name}'") 
 
 # RUN DOWNLOAD SCRIPT
 print("Downloading...")
@@ -161,6 +175,24 @@ cmds = [
 if args.verbose:
     for cmd in cmds:
         print(f"$ {cmd}")
-os.system(" && ".join(cmds))
+os.system(" && ".join(cmds)) """
 
+
+#SCRIPT FOR HLS FILES
+
+for d in downloads:#downloading temporary files (segments+playlist)
+    os.mkdir("./tmp")
+    m3u8_filename = d[0][0].split('/')[-1].split("?")[0]
+    i=0
+    for link in d[0]:
+        #TODO: MULTITHREAD THIS BITCH (its slow af)
+        print("Downloading Segment "+str(i)+"/"+str(len(d[0])-1))
+        i+=1
+        local_filename = "./tmp/"+link.split('/')[-1].split("?")[0]
+        f=open(local_filename, "wb")
+        f.write(requests.get(link).content)
+        f.close()
+    subprocess.run(["ffmpeg", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", d[1]])
+    shutil.rmtree("./tmp")
+            
 print("done.")
