@@ -6,6 +6,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 
 def resolve(url, *, driver=None):
+    """
+    Returns a list where the fist element is the Link to the HLS Media Playlist .m3u8 file.
+    
+    The following elements are the Links to the .ts video files.
+    """
     if driver is None:
         options = webdriver.ChromeOptions()
         options.add_argument("--incognito")
