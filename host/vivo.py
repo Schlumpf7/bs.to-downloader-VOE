@@ -52,7 +52,7 @@ def resolve(url, *, driver=None):
 
     print(f"Resolving (vivo): {url}")
 
-    driver.switch_to_window(driver.window_handles[-1])
+    driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
     wait = WebDriverWait(driver, 10)
