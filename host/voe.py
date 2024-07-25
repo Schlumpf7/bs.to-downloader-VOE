@@ -1,5 +1,5 @@
-import utils
-
+import base64
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,16 +20,20 @@ def resolve(url, *, driver=None):
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
+    #Waiting for a random big element so the script for getting the hls-source will be finisched
+    #if you know how to wait for the script explicitely, please change this
     wait = WebDriverWait(driver, 10)
-    wait.until(EC.presence_of_element_located(
-        (By.CSS_SELECTOR, ".stream-content > div > div > video > source")))
-
+    wait.until(
+        EC.presence_of_element_located((By.ID, "sprite-plyr"))
+    )
     return _extract(driver.page_source)
 
 
 def _extract(html):
-    soup = utils.soup(html)
+    soup = BeautifulSoup(html, "html.parser")
 
-    # source = soup.select_one(".stream-content > div > div > video > source")
-    source = soup.find("source")
-    return source["src"], source["type"], source["size"]
+    script = str(soup.find_all("script")[11])
+    hls=script.split("\'hls\'")[1]
+    hls=hls.split("\'")[1]
+    source=base64.b64decode(hls)
+    return source
