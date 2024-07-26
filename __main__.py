@@ -15,6 +15,7 @@ import utils
 
 supported_hosts = ["VOE"]
 
+#sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "3"]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
@@ -209,7 +210,7 @@ for d in downloads:#downloading temporary files (segments+playlist)
         os.rename("./tmp/"+m3u8_filename+"_new","./tmp/"+m3u8_filename)#rename new file
 
     #CONVERT m3u8 to mp4 using ffmpeg
-    subprocess.run(["ffmpeg", "-i", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", d[1]])
+    subprocess.run(["ffmpeg", "-y", "-i", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", "-hide_banner", "-loglevel", "error", d[1]])
     shutil.rmtree("./tmp")
             
 print("done.")
