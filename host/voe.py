@@ -24,6 +24,7 @@ def resolve(url, *, driver=None):
 
     print(f"Resolving (voe): {url}")
 
+    #TODO: IGNORE SSL HANDSHAKE
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
