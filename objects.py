@@ -37,6 +37,7 @@ class Season:
 
     @property
     def series_str(self):
+        #retuns string of form "S01.Deutsch"
         return f"{self.title}"
 
     @property
