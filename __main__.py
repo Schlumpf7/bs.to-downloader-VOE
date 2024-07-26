@@ -15,7 +15,7 @@ import utils
 
 supported_hosts = ["VOE"]
 
-sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "4"]
+#sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "4"]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
