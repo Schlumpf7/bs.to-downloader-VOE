@@ -15,7 +15,7 @@ import utils
 
 supported_hosts = ["VOE"]
 
-#sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "3"]
+sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "4"]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
@@ -182,6 +182,9 @@ os.makedirs(sepath, exist_ok=True)
 #SCRIPT FOR HLS FILES
 for d in downloads:#downloading temporary files (segments+playlist)
     print("DOWNLOADING "+str(d[1]).split("\\")[-1])
+    if d[0]==None:
+        print("DOWNLOAD FAILED")
+        continue
     if os.path.isdir("./tmp"): shutil.rmtree("./tmp")
     os.mkdir("./tmp")
     m3u8_filename = d[0][0].split('/')[-1].split("?")[0]

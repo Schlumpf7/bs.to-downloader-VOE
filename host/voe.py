@@ -1,6 +1,7 @@
 import base64
 import requests
 from bs4 import BeautifulSoup
+from selenium.common.exceptions import TimeoutException
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -26,12 +27,16 @@ def resolve(url, *, driver=None):
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
+
     #Waiting for a random big element so the script for getting the hls-source will be finisched
     #if you know how to wait for the script explicitely, please change this
     wait = WebDriverWait(driver, 10)
-    wait.until(
-        EC.presence_of_element_located((By.ID, "sprite-plyr"))
-    )
+    try:
+        wait.until(
+            EC.presence_of_element_located((By.ID, "sprite-plyr"))
+        )
+    except TimeoutException:
+        return None
     return _extract(driver.page_source)
 
 
