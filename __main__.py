@@ -15,7 +15,6 @@ import utils
 
 supported_hosts = ["VOE"]
 
-sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--end", "1" ]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
@@ -141,20 +140,19 @@ if args.json:
 
 
 # DOWNLOAD
-eppath = pathlib.Path()
-if not args.flat:  # put into season-directory
-    eppath = eppath.joinpath(utils.safe_filename(s.season_str))
+sepath = pathlib.Path()
+if not args.flat:  # season path:
+    sepath = outpath.joinpath(utils.safe_filename(s.season_str))
 
 #create list of tuples (video_url, epidode_path)
 downloads=[]
 for ep in episodes_select:
-    pathep=eppath.joinpath(utils.safe_filename(f"{s.id_str}.{ep.id_str}.{ep.filetype}"))#path per episode (eppath/Series_string.episode_string.filetype)
-    downloads.append((ep.video_url, pathep))
+    eppath=sepath.joinpath(utils.safe_filename(f"{s.season_str}.{ep.episode_str}.{ep.filetype}"))#path per episode (sepath/Series_string.episode_string.filetype)
+    downloads.append((ep.video_url, eppath))
 
 
-#Download procedure for vivo
-
-""" #SCRIPT
+#legacy Download procedure for vivo
+"""  #SCRIPT
 scriptpath = outpath.joinpath(utils.safe_filename(f"Download {s.id_str}.sh"))
 with scriptpath.open("w") as file:
     if not args.flat:
@@ -175,12 +173,15 @@ cmds = [
 if args.verbose:
     for cmd in cmds:
         print(f"$ {cmd}")
-os.system(" && ".join(cmds)) """
+os.system(" && ".join(cmds))  """
 
+#CREATE output dir
+os.makedirs(sepath, exist_ok=True)
 
 #SCRIPT FOR HLS FILES
-
 for d in downloads:#downloading temporary files (segments+playlist)
+    print("DOWNLOADING "+str(d[1]).split("\\")[-1])
+    if os.path.isdir("./tmp"): shutil.rmtree("./tmp")
     os.mkdir("./tmp")
     m3u8_filename = d[0][0].split('/')[-1].split("?")[0]
     i=0
@@ -207,6 +208,7 @@ for d in downloads:#downloading temporary files (segments+playlist)
         os.remove("./tmp/"+m3u8_filename)#remove old file
         os.rename("./tmp/"+m3u8_filename+"_new","./tmp/"+m3u8_filename)#rename new file
 
+    #CONVERT m3u8 to mp4 using ffmpeg
     subprocess.run(["ffmpeg", "-i", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", d[1]])
     shutil.rmtree("./tmp")
             
