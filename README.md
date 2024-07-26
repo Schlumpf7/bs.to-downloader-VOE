@@ -4,25 +4,34 @@ A tool to download entire seasons from bs.to
 
 ## Requirements
 
-- python <https://www.python.org/downloads/>
+- python `winget install python`
+- pip:
+    1. download https://bootstrap.pypa.io/get-pip.py
+    *(right-click, save link as)*
+    2. `py get-pip.py`
 - chromedriver <https://chromedriver.chromium.org>
+(or just have chrome installed)
 - beautifulsoup4 `pip install beautifulsoup4`
 - selenium `pip install selenium`
 - requests `pip install requests`
-- ffmpeg (for converting the videos to mp4)
+- ffmpeg `winget install ffmpeg`
+(for converting the videos to mp4)
 
 ## Getting started
 
 1. Visit [bs.to](https://bs.to) and select your desired series (including season and language). Copy the URL in the top bar of your browser (Should be of this form: `http://bs.to/serie/<series>/<season>/<language>`, e.g. `https://bs.to/serie/Downton-Abbey/1/en`).
-2. Run the program in the command-line: `python . -h`
+
+3. Run the program in the command-line: 
+`python . <url>`
+
 
 ## Please note
 
 - Currently only one host ([voe](https://voe.sx)) is supported!
 
-- Hosts like vivo **change** the video URLs frequently, so the links given only stay valid for about 6h.
+- The download is rather slow due to lack of multithreading
 
-- **Windows users**: Please use `Git Bash`/`PowerShell` instead of `cmd`!
+
 
 ## How it works
 
