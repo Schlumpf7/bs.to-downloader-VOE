@@ -71,6 +71,5 @@ def download_part(id, m3u8_filename, link):
     f=open(local_filename, "wb")
     f.write(requests.get(link).content)
     f.close()
-    print("Downloaded Segment "+str(id))
 
 

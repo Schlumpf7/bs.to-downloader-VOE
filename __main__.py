@@ -180,7 +180,7 @@ os.system(" && ".join(cmds))  """
 #CREATE output dir
 os.makedirs(sepath, exist_ok=True)
 
-#SCRIPT FOR HLS FILES
+#DOWNLOAD SCRIPT FOR HLS FILES
 for d in downloads:#downloading temporary files (segments+playlist)
     print("DOWNLOADING "+str(d[1]).split("\\")[-1])
     if d[0]==None:
