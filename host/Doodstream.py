@@ -1,5 +1,4 @@
 import base64
-import os
 import requests
 from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
@@ -10,9 +9,7 @@ from selenium.webdriver.common.by import By
 
 def resolve(url, *, driver=None):
     """
-    Returns a list where the fist element is the Link to the HLS Media Playlist .m3u8 file.
-    
-    The following elements are the Links to the .ts video files.
+    Returns a string wich contains the link to the mp4
     """
     if driver is None:
         options = webdriver.ChromeOptions()
@@ -25,7 +22,6 @@ def resolve(url, *, driver=None):
 
     print(f"Resolving (voe): {url}")
 
-    #TODO: IGNORE SSL HANDSHAKE
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
@@ -33,13 +29,13 @@ def resolve(url, *, driver=None):
     #Waiting for a random big element so the script for getting the hls-source will be finisched
     #if you know how to wait for the script explicitely, please change this
     wait = WebDriverWait(driver, 10)
-    try:
+    """ try:
         wait.until(
-            EC.presence_of_element_located((By.ID, "sprite-plyr"))
+            EC.presence_of_element_located((By.ID, "player-wrap container"))
         )
     except TimeoutException:
-        return None
-    return _extract(driver.page_source)
+        return None """
+    return driver.page_source
 
 
 def _extract(html):
@@ -65,12 +61,3 @@ def _extract(html):
         sources.append(prefix+seg)#add snippet link to list 
         
     return sources
-
-def download_part(id, m3u8_filename, link):
-    local_filename = "./tmp/"+link.split('/')[-1].split("?")[0]
-    f=open(local_filename, "wb")
-    f.write(requests.get(link).content)
-    f.close()
-    print("Downloaded Segment "+str(id))
-
-

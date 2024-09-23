@@ -5,6 +5,7 @@ import pathlib
 import argparse
 import sys
 import webbrowser
+import threading
 from pprint import pformat
 
 import requests
@@ -15,7 +16,7 @@ import utils
 
 supported_hosts = ["VOE"]
 
-#sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/1/de", "--start", "4"]
+#sys.argv=["url","https://bs.to/serie/The-Big-Bang-Theory-TBBT/5/de", "--start", "1", "--end", "1"]
 # PARSER
 parser = argparse.ArgumentParser(
     prog="bs.to-downloader",
@@ -188,30 +189,32 @@ for d in downloads:#downloading temporary files (segments+playlist)
     if os.path.isdir("./tmp"): shutil.rmtree("./tmp")
     os.mkdir("./tmp")
     m3u8_filename = d[0][0].split('/')[-1].split("?")[0]
+    
+    t=[]#array of threads
     i=0
     for link in d[0]:
         #TODO: MULTITHREAD THIS BITCH (its slow af)
-        print("Downloading Segment "+str(i)+"/"+str(len(d[0])-1))
+        t.append(threading.Thread(target=host.voe.download_part,args=[i,m3u8_filename, link]))
+        t[i].start()
         i+=1
-        local_filename = "./tmp/"+link.split('/')[-1].split("?")[0]
-        f=open(local_filename, "wb")
-        f.write(requests.get(link).content)
-        f.close()
-
-        #RE-FORMAT M3U8 file to just contain the file names(delete everything after .ts)
-        f=open("./tmp/"+m3u8_filename)
-        f_new=open("./tmp/"+m3u8_filename+"_new", "w")
-        to_replace=""
-        for line in f:
-            if to_replace=="" and line.__contains__("?t"):
-                to_replace="?t"+line.split("?t")[1][:-1]
-            line=line.replace(to_replace, "")
-            f_new.write(line)
-        f.close()
-        f_new.close()
-        os.remove("./tmp/"+m3u8_filename)#remove old file
-        os.rename("./tmp/"+m3u8_filename+"_new","./tmp/"+m3u8_filename)#rename new file
-
+    
+    #RE-FORMAT M3U8 file to just contain the file names(delete everything after .ts)
+    f=open("./tmp/"+m3u8_filename)
+    f_new=open("./tmp/"+m3u8_filename+"_new", "w")
+    to_replace=""
+    for line in f:
+        if to_replace=="" and line.__contains__("?t"):
+            to_replace="?t"+line.split("?t")[1][:-1]
+        line=line.replace(to_replace, "")
+        f_new.write(line)
+    f.close()
+    f_new.close()
+    os.remove("./tmp/"+m3u8_filename)#remove old file
+    os.rename("./tmp/"+m3u8_filename+"_new","./tmp/"+m3u8_filename)#rename new file
+    
+    for thread in t:
+        thread.join()
+        
     #CONVERT m3u8 to mp4 using ffmpeg
     subprocess.run(["ffmpeg", "-y", "-i", "./tmp/"+m3u8_filename, "-acodec", "copy", "-vcodec", "copy", "-hide_banner", "-loglevel", "error", d[1]])
     shutil.rmtree("./tmp")
