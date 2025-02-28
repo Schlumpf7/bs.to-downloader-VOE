@@ -1,7 +1,6 @@
+import subprocess
 import base64
-import os
 import requests
-from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,10 +9,9 @@ from selenium.webdriver.common.by import By
 
 def resolve(url, *, driver=None):
     """
-    Returns a list where the fist element is the Link to the HLS Media Playlist .m3u8 file.
-    
-    The following elements are the Links to the .ts video files.
+    Returns the URL to the HLS Media Playlist (.m3u8 file).
     """
+
     if driver is None:
         options = webdriver.ChromeOptions()
         options.add_argument("--incognito")
@@ -25,51 +23,52 @@ def resolve(url, *, driver=None):
 
     print(f"Resolving (voe): {url}")
 
-    #TODO: IGNORE SSL HANDSHAKE
+    # Navigate to the URL
     driver.switch_to.window(driver.window_handles[-1])
     driver.get(url)
 
-
-    #Waiting for a random big element so the script for getting the hls-source will be finisched
-    #if you know how to wait for the script explicitely, please change this
+    # Waiting for a random large element (e.g., "sprite-plyr") to ensure that the HLS script has finished loading
     wait = WebDriverWait(driver, 10)
     try:
-        wait.until(
-            EC.presence_of_element_located((By.ID, "sprite-plyr"))
-        )
+        # Wait for the element with ID 'sprite-plyr' to be present on the page
+        wait.until(EC.presence_of_element_located((By.ID, "sprite-plyr")))
     except TimeoutException:
+        print("Timeout: The element #sprite-plyr did not appear in time.")
         return None
+
+    # Once the element is found, extract the page source and process it
     return _extract(driver.page_source)
 
-
 def _extract(html):
-    hls=html.split("\'hls\'")[1]
-    hls=hls.split("\'")[1]
-    source=base64.b64decode(hls).decode("UTF-8")
-    
-    master=requests.get(source).content.decode("UTF-8")
-    prefix=source.replace(source.split("/")[-1], "")#source minus everything after the last "/"
-    #prefix example: https://delivery-node-p85gf9aoh6mefgdf.voe-network.net/engine/hls2-c/01/08273/5h9fug3g4ge2_,n,.urlset/
-    
-    sources=[prefix+master.split("\n")[2]]#add Media Playlist link to sources list 
-    
-    mediaPL=requests.get(sources[0]).content.decode("UTF-8")#get media playlist
-    #loop over each segment in Media playlist to generate link
-    segments=mediaPL.split("\n")[6:]
-    for i in range(len(segments)):
-        if i%2==0 or i==len(segments)-1: 
-            #skip every second line because it just contains the duration of the snippet
-            continue 
-        
-        seg=segments[i]
-        sources.append(prefix+seg)#add snippet link to list 
-        
-    return sources
+    try:
+        # Extracting the HLS URL (encoded in base64)
+        hls = html.split("\'hls\'")[1]
+        hls = hls.split("\'")[1]
+        source = base64.b64decode(hls).decode("UTF-8", errors="ignore")
+        print(f"Decoded source: {source[:500]}")
+    except (IndexError, ValueError) as e:
+        print("Error extracting HLS source:", e)
+        return None
 
-def download_part(id, m3u8_filename, link):
-    local_filename = "./tmp/"+link.split('/')[-1].split("?")[0]
-    f=open(local_filename, "wb")
-    f.write(requests.get(link).content)
-    f.close()
+    # Fetch the master playlist and extract the base URL
+    master = requests.get(source).content.decode("UTF-8")
+    prefix = source.replace(source.split("/")[-1], "")  # Get the base URL for the HLS segments
 
+    # Return the link to the HLS master playlist (m3u8)
+    return prefix + master.split("\n")[2]
 
+def convert_to_mp4(m3u8_url, output_file):
+    """
+    Use ffmpeg to convert the m3u8 URL to an mp4 file.
+    """
+    result = subprocess.run([
+        "ffmpeg", "-y", "-i", m3u8_url, "-acodec", "copy", "-vcodec", "copy",
+        "-hide_banner", "-loglevel", "error", str(output_file)
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print(f"FFmpeg-Fehler: {result.stderr}")
+        return False
+
+    print(f"Conversion to MP4 successful: {output_file}")
+    return True
