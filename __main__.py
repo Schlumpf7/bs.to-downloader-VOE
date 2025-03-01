@@ -66,25 +66,12 @@ if args.dry:
     print("Dry run complete.")
     quit()
 
-print("Please solve CAPTCHAs if needed and copy-paste the host-url, then press enter:")
-for ep in episodes_select:
-    webbrowser.open(s.base + "/" + ep.hosts[host_select])
-    ep.host_url = input(f"  {ep}: ").strip()
-
-# CRAWL HOST SITES
-match host_select:
-    case "VOE":
-        import host.voe
-        for ep in episodes_select:
-#            ep.video_url = host.voe.resolve(ep.host_url)
-            ep.filetype = "mp4"
-    case _:
-        print("ERROR: Unsupported host")
-        quit()
-
 # OUTPUT
 outpath = pathlib.Path(args.out).joinpath(utils.safe_filename(s.series_str))
 outpath.mkdir(parents=True, exist_ok=True)
+
+sepath = outpath if args.flat else outpath.joinpath(utils.safe_filename(s.season_str))
+sepath.mkdir(parents=True, exist_ok=True)
 
 if args.json:
     import json
@@ -99,13 +86,37 @@ if args.json:
     with filepath.open("w") as file:
         file.write(json.dumps(data, indent=4))
 
-# DOWNLOAD
-sepath = outpath if args.flat else outpath.joinpath(utils.safe_filename(s.season_str))
-sepath.mkdir(parents=True, exist_ok=True)
-
-downloads = [(ep.video_url, sepath.joinpath(utils.safe_filename(f"{s.season_str}.{ep.episode_str}.{ep.filetype}"))) for ep in episodes_select]
+# Überprüfe zuerst alle Episoden und frage nach den URLs
+pending_episodes = []
 
 for ep in episodes_select:
+    print(f"Checking {ep}...")
+
+    # Bestimme den Ausgabepfad für das MP4
+    output_file = sepath.joinpath(utils.safe_filename(f"{s.season_str}.{ep.episode_str}.{ep.title}.mp4"))
+
+    if output_file.exists():
+        print(f"Skipping {ep}, file already exists: {output_file}")
+        continue
+
+    pending_episodes.append(ep)
+
+if not pending_episodes:
+    print("No new episodes to download.")
+    quit()
+
+print("Please solve CAPTCHAs if needed and copy-paste the host-URLs, then press enter:")
+for ep in pending_episodes:
+    webbrowser.open(s.base + "/" + ep.hosts[host_select])
+    ep.host_url = input(f"  {ep}: ").strip()
+
+    if not ep.host_url:
+        print(f"Skipping {ep}, no host URL provided.")
+        pending_episodes.remove(ep)
+
+# Starte nun den Download und die Konvertierung
+import host.voe
+for ep in pending_episodes:
     print(f"Converting {ep} to MP4...")
 
     # Hole die m3u8-URL von voe.py
@@ -115,8 +126,11 @@ for ep in episodes_select:
         print("Failed to resolve m3u8 URL.")
         continue
 
-    # Bestimme den Ausgabepfad für das MP4
     output_file = sepath.joinpath(utils.safe_filename(f"{s.season_str}.{ep.episode_str}.{ep.title}.mp4"))
+
+    if output_file.exists():
+        print(f"Skipping {ep}, file already exists after resolving URL: {output_file}")
+        continue
 
     # Konvertiere mit ffmpeg
     success = host.voe.convert_to_mp4(m3u8_url, output_file)
